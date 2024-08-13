@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Real-Time Data</title>
+  </head>
+  <body>
+    <h1>Real-Time Data from WebSocket Server</h1>
+    <div id="data"></div>
+
+    <script>
+      // Create a WebSocket connection to the server
+      const socket = new WebSocket("ws://localhost:8000");
+
+      // Event listener for when the connection is open
+      socket.addEventListener("open", (event) => {
+        console.log("Connected to the server");
+      });
+
+      // Event listener for receiving messages from the server
+      socket.addEventListener("message", (event) => {
+        console.log(event.data);
+        const data = JSON.parse(event.data);
+        document.getElementById(
+          "data"
+        ).innerText = `Time: ${data.timestamp}, Value: ${data.value}`;
+      });
+    </script>
+  </body>
+</html>
