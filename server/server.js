@@ -1,47 +1,58 @@
-const WebSocket = require("ws");
-
-// Create a WebSocket server on port 8000
-const wss = new WebSocket.Server({ port: 8000 });
+const http = require("http").createServer();
+const io = require("socket.io")(http, {
+  cors: { origin: "*" },
+});
 
 // Event listener for when a client connects to the server
-wss.on("connection", (ws) => {
+io.on("connection", (socket) => {
   console.log("A new client connected!");
 
-  // Send a welcome message
-  ws.send(
-    JSON.stringify({
-      message:
-        "Welcome to the WebSocket server! You will receive real-time data updates.",
-    })
-  );
+  // Join a room based on client-provided room name
+  socket.on("joinRoom", (room) => {
+    socket.join(room);
+    console.log(`Client joined room: ${room}`);
+
+    // Send a welcome message to the specific room
+    socket.to(room).emit("message", {
+      message: `Welcome to room ${room}! You will receive real-time data updates.`,
+    });
+  });
+
+  socket.on("leaveRoom", (room) => {
+    socket.leave(room);
+    console.log(`Client left room: ${room}`);
+  });
 
   // Event listener for when the connection is closed
-  ws.on("close", () => {
+  socket.on("disconnect", () => {
     console.log("A client disconnected.");
   });
 
   // Event listener for handling errors
-  ws.on("error", (error) => {
-    console.error("WebSocket error:", error);
+  socket.on("error", (error) => {
+    console.error("Socket.IO error:", error);
   });
 });
 
-// Function to send real-time data updates
-function sendRealTimeData() {
-  const data = {
-    timestamp: new Date().toISOString(),
-    value: Math.random(), // Simulate a real-time data value
-  };
-
-  // Broadcast the data to all connected clients
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-    }
-  });
+// Function to send real-time data updates to a specific room
+function sendRealTimeDataToRoom(room) {
+  if (room == "room1") {
+    const data = {
+      timestamp: new Date().toISOString(),
+    };
+    io.to(room).emit("realTimeData", data);
+  } else if (room == "room2") {
+    const data = {
+      value: Math.random(),
+    };
+    io.to(room).emit("realTimeData", data);
+  }
 }
 
-// Send real-time data every second
-setInterval(sendRealTimeData, 1000);
+//Send real-time data to different rooms every second
+setInterval(() => {
+  sendRealTimeDataToRoom("room1");
+  sendRealTimeDataToRoom("room2");
+}, 1000);
 
-console.log("WebSocket server is running on ws://localhost:8000");
+http.listen(8000, () => console.log("listening on http://localhost:8000"));

@@ -3,28 +3,67 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebSocket Real-Time Data</title>
+    <title>Socket.IO Real-Time Data with Rooms</title>
+    <!-- Include Socket.IO client library -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
   </head>
   <body>
-    <h1>Real-Time Data from WebSocket Server</h1>
+    <h1>Real-Time Data from Socket.IO Server</h1>
+
+    <!-- Room selection and message display -->
+    <div>
+      <label for="room">Select Room:</label>
+      <select id="room">
+        <option value="room1">Room 1</option>
+        <option value="room2">Room 2</option>
+      </select>
+      <button id="joinRoom">Join Room</button>
+    </div>
+
     <div id="data"></div>
 
     <script>
-      // Create a WebSocket connection to the server
-      const socket = new WebSocket("ws://localhost:8000");
+      // Create a Socket.IO connection to the server
+      const socket = io("http://localhost:8000");
 
-      // Event listener for when the connection is open
-      socket.addEventListener("open", (event) => {
+      // Event listener for when the connection is established
+      socket.on("connect", () => {
         console.log("Connected to the server");
       });
 
-      // Event listener for receiving messages from the server
-      socket.addEventListener("message", (event) => {
-        console.log(event.data);
-        const data = JSON.parse(event.data);
-        document.getElementById(
-          "data"
-        ).innerText = `Time: ${data.timestamp}, Value: ${data.value}`;
+      let currentRoom = null;
+
+      // Function to join a room based on selection
+      document.getElementById("joinRoom").addEventListener("click", () => {
+        const room = document.getElementById("room").value;
+        if (currentRoom) {
+          socket.emit("leaveRoom", currentRoom);
+          console.log(`Left room: ${currentRoom}`);
+        }
+        socket.emit("joinRoom", room);
+        currentRoom = room;
+        console.log(`Joined room: ${room}`);
+      });
+
+      // Event listener for receiving messages (e.g., welcome message, room messages)
+      socket.on("message", (data) => {
+        console.log(data.message);
+        const messageElement = document.createElement("p");
+        messageElement.innerText = data.message;
+        document.body.insertBefore(
+          messageElement,
+          document.getElementById("data")
+        );
+      });
+
+      // Event listener for receiving real-time data from the server
+      socket.on("realTimeData", (data) => {
+        console.log(data);
+        if (data.timestamp) {
+          document.getElementById("data").innerText = `Time: ${data.timestamp}`;
+        } else if (data.value) {
+          document.getElementById("data").innerText = ` Value: ${data.value}`;
+        }
       });
     </script>
   </body>
